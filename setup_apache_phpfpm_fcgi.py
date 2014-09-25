@@ -7,9 +7,9 @@ import helper.basic as basicHelper
 import sys
 
 # erstma updaten
-command("aptitude -y update 1>/dev/null")
+basicHelper.command("aptitude -y update 1>/dev/null")
 # add more cool tools
-command("aptitude install apache2-mpm-worker/sid") 
-command("aptitude install apache2-utils/sid php5-fpm/sid libapache2-mod-fastcgi")
-command("a2enmod actions")
-command("service apache2 restart")
+basicHelper.command("aptitude install apache2-mpm-worker/sid")
+basicHelper.command("aptitude install apache2-utils/sid php5-fpm/sid libapache2-mod-fastcgi")
+basicHelper.command("a2enmod actions")
+basicHelper.command("service apache2 restart")
