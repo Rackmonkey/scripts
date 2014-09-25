@@ -60,23 +60,24 @@ def get_highest_fpm_port():
 def add_apache_vhost(domain,homeRoot,fpmPort):
 	# wir haben nach dem höchsten gesucht und brauchen nun +1
 	fpmPort += 1
-	if not(basics.check_file("/etc/apache2/sites-available/",domain + ".conf")):
-		apacheVersion = subprocess.getoutput("dpkg-query -W apache2-mpm-worker")
+	apache2vier = 0
+	fileSuffix = ""
+	apacheVersion = subprocess.getoutput("dpkg-query -W apache2-mpm-worker")
 		if(apacheVersion.find('2.4.') != -1):
-			print("Apache Version 2.4")
+			apache2vier = 1 
+			fileSuffix = ".conf"
+
+	if not(basics.check_file("/etc/apache2/sites-available/",domain + fileSuffix)):
+		if(apache2vier)
 			templateFile = open("templates/apache_conf_2.4.txt", "r")
 		elif
-			print("Apache Version != 2.4")
 			templateFile = open("templates/apache_conf.txt", "r")
 		template = templateFile.read();
 		templateFile.close();
 		template = template.replace("[root_path]",homeRoot);
 		template = template.replace("[domain]",domain);
 		template = template.replace("[port]",str(fpmPort));
-		if(apacheVersion.find('2.4.') != -1):
-			configFile = open("/etc/apache2/sites-available/" + domain + ".conf", "w")
-		elif
-			configFile = open("/etc/apache2/sites-available/" + domain, "w")
+		configFile = open("/etc/apache2/sites-available/" + domain + fileSuffix, "w")
 		configFile.write(template)
 		configFile.close();
 
