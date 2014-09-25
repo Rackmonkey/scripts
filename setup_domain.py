@@ -48,13 +48,14 @@ def get_highest_fpm_port():
 
 	for root, dirs, files in os.walk("/etc/php5/fpm/pool.d/"):
 	    for file in files:
-	        if file.endswith('.conf'):
-	            conf.read("/etc/php5/fpm/pool.d/" + file)
-	            section = conf.sections()
-	            ipPort = conf.get(section[0], 'listen')
-	            port = ipPort.split(":")
-	            if(max_port < int(port[1])):
-	            	max_port = int(port[1])
+	    	if not (file == "www.conf")
+		        if file.endswith('.conf'):
+		            conf.read("/etc/php5/fpm/pool.d/" + file)
+		            section = conf.sections()
+		            ipPort = conf.get(section[0], 'listen')
+		            port = ipPort.split(":")
+		            if(max_port < int(port[1])):
+		            	max_port = int(port[1])
 	return max_port
 
 def add_apache_vhost(domain,homeRoot,fpmPort):
@@ -63,12 +64,12 @@ def add_apache_vhost(domain,homeRoot,fpmPort):
 	apache2vier = 0
 	fileSuffix = ""
 	apacheVersion = subprocess.getoutput("dpkg-query -W apache2-mpm-worker")
-		if(apacheVersion.find('2.4.') != -1):
-			apache2vier = 1 
-			fileSuffix = ".conf"
+	if(apacheVersion.find('2.4.') != -1):
+		apache2vier = 1 
+		fileSuffix = ".conf"
 
 	if not(basics.check_file("/etc/apache2/sites-available/",domain + fileSuffix)):
-		if(apache2vier)
+		if(apache2vier):
 			templateFile = open("templates/apache_conf_2.4.txt", "r")
 		elif
 			templateFile = open("templates/apache_conf.txt", "r")
