@@ -73,7 +73,10 @@ def add_apache_vhost(domain,homeRoot,fpmPort):
 		template = template.replace("[root_path]",homeRoot);
 		template = template.replace("[domain]",domain);
 		template = template.replace("[port]",str(fpmPort));
-		configFile = open("/etc/apache2/sites-available/" + domain + ".conf", "w")
+		if(apacheVersion.find('2.4.') != -1):
+			configFile = open("/etc/apache2/sites-available/" + domain + ".conf", "w")
+		elif
+			configFile = open("/etc/apache2/sites-available/" + domain, "w")
 		configFile.write(template)
 		configFile.close();
 

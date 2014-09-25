@@ -9,8 +9,9 @@ import sys
 basics.command("aptitude -y update 1>/dev/null")
 # add more cool tools
 basics.command("aptitude install apache2-mpm-worker")
-basics.command("aptitude install apache2-utils/sid php5-fpm/sid libapache2-mod-fastcgi")
+basics.command("aptitude install apache2-utils php5-fpm libapache2-mod-fastcgi")
 basics.command("a2enmod actions")
+basics.command("rm /etc/php5/fpm/pool.d/*")
 basics.command("service apache2 restart")
 
 #basics.command('echo "apache2-mpm-worker 2.4 (sid), php5-fpm 5.6 (sid) and fastcgi setup" >> /etc/motd')
