@@ -8,12 +8,13 @@ import sys
 # erstma updaten
 basics.command("aptitude -y update 1>/dev/null")
 # add more cool tools
-basics.command("aptitude install apache2-mpm-worker/sid")
+basics.command("aptitude install apache2-mpm-worker")
 basics.command("aptitude install apache2-utils/sid php5-fpm/sid libapache2-mod-fastcgi")
 basics.command("a2enmod actions")
 basics.command("service apache2 restart")
 
-basics.command('echo "apache2-mpm-worker 2.4 (sid), php5-fpm 5.6 (sid) and fastcgi setup" >> /etc/motd')
+#basics.command('echo "apache2-mpm-worker 2.4 (sid), php5-fpm 5.6 (sid) and fastcgi setup" >> /etc/motd')
+basics.command('echo "apache2-mpm-worker, php5-fpm and fastcgi setup" >> /etc/motd')
 basics.command('echo "by david bauer aka debauer - me@debauer.net" >> /etc/motd')
 basics.command('echo "" >> /etc/motd')
 basics.command('echo "USAGE:" >> /etc/motd')

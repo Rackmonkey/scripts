@@ -12,6 +12,7 @@ import helper.basic as basics
 import sys, os
 import argparse
 import configparser
+import subprocess
 
 version = 1.0
 
@@ -60,7 +61,13 @@ def add_apache_vhost(domain,homeRoot,fpmPort):
 	# wir haben nach dem höchsten gesucht und brauchen nun +1
 	fpmPort += 1
 	if not(basics.check_file("/etc/apache2/sites-available/",domain + ".conf")):
-		templateFile = open("templates/apache_conf.txt", "r")
+		apacheVersion = subprocess.getoutput("dpkg-query -W apache2-mpm-worker")
+		if(apacheVersion.find('2.4.') != -1):
+			print("Apache Version 2.4")
+			templateFile = open("templates/apache_conf_2.4.txt", "r")
+		elif
+			print("Apache Version != 2.4")
+			templateFile = open("templates/apache_conf.txt", "r")
 		template = templateFile.read();
 		templateFile.close();
 		template = template.replace("[root_path]",homeRoot);

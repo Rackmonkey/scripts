@@ -1,0 +1,38 @@
+<VirtualHost *:80>
+	DocumentRoot [root_path]/[domain]/htdocs
+	ServerName [domain]
+	ServerAdmin admin@[domain]
+
+	<Directory [root_path]/[domain]/htdocs>
+		Options -Indexes
+		Require all granted
+		AllowOverride All
+	</Directory>
+
+	ErrorLog [root_path]/[domain]/logs/error.apache.log
+	LogLevel info
+	CustomLog [root_path]/[domain]/logs/access.log combined
+
+	<FilesMatch ".+\.ph(p[345]?|t|tml)$">
+		SetHandler application/x-httpd-php
+	</FilesMatch>
+
+	# Define Action and Alias needed for FastCGI external server.
+	Action application/x-httpd-php /fcgi-bin/php5-fpm virtual
+	Alias /fcgi-bin/php5-fpm /fpm-[domain]
+	
+	<Location /fcgi-bin/php5-fpm>
+		# here we prevent direct access to this Location url,
+		# env REDIRECT_STATUS will let us use this fcgi-bin url
+		# only after an internal redirect (by Action upper)
+		Require env REDIRECT_STATUS
+	</Location>
+
+	<IfModule mod_fastcgi.c>
+		# throws error, so disabled:
+		# [warn] FastCGI: there is no fastcgi wrapper set, user/group options are ignored
+		#FastCgiExternalServer /fpm-[domain] -host 127.0.0.1:[port] -pass-header Authorization -user [domain] -group [domain]
+		FastCgiExternalServer /fpm-[domain] -host 127.0.0.1:[port] -pass-header Authorization
+	</IfModule>
+
+</VirtualHost>
