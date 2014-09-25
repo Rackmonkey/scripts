@@ -48,7 +48,7 @@ def get_highest_fpm_port():
 
 	for root, dirs, files in os.walk("/etc/php5/fpm/pool.d/"):
 	    for file in files:
-	    	if not (file == "www.conf")
+	    	if not (file == "www.conf"):
 		        if file.endswith('.conf'):
 		            conf.read("/etc/php5/fpm/pool.d/" + file)
 		            section = conf.sections()
