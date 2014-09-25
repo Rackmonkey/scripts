@@ -71,7 +71,7 @@ def add_apache_vhost(domain,homeRoot,fpmPort):
 	if not(basics.check_file("/etc/apache2/sites-available/",domain + fileSuffix)):
 		if(apache2vier):
 			templateFile = open("templates/apache_conf_2.4.txt", "r")
-		elif
+		else:
 			templateFile = open("templates/apache_conf.txt", "r")
 		template = templateFile.read();
 		templateFile.close();
