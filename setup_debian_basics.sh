@@ -14,7 +14,7 @@ echo "# Testing for apache 2.4" >> /etc/apt/sources.list
 echo "#" >> /etc/apt/sources.list
 echo "" >> /etc/apt/sources.list
 #echo "deb http://ftp.debian.org/debian sid main non-free contrib" >> /etc/apt/sources.list
-echo "deb http://http.debian.org/debian jessie main non-free contrib" >> /etc/apt/sources.list
+echo "deb http://ftp.debian.org/debian jessie main non-free contrib" >> /etc/apt/sources.list
 echo "deb http://security.debian.org/ jessie/updates main contrib non-free" >> /etc/apt/sources.list
 
 #echo "sid in sources.list hinzugefügt"

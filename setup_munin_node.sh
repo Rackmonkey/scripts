@@ -11,7 +11,7 @@ echo " " >> /etc/munin/munin-node.conf
 echo " " >> /etc/munin/munin-node.conf
 echo "# ==================================================" >> /etc/munin/munin-node.conf
 echo "# Automatisch hinzugefügt durch setup_munin_node.sh" >> /etc/munin/munin-node.conf
-echo "# https://github.com/debauer/scripts" >> /etc/munin/munin-node.conf
+echo "# https://github.com/rackmonkey/scripts" >> /etc/munin/munin-node.conf
 echo "# ==================================================" >> /etc/munin/munin-node.conf
 echo " " >> /etc/munin/munin-node.conf
 echo " " >> /etc/munin/munin-node.conf

@@ -2,8 +2,8 @@
 # written by David Bauer, initial start 11.09.2014
 # Inspiriert von https://github.com/bastelfreak/scripts/blob/master/setup_domain.sh
 # 
-#
-# apache >= 2.4 !!
+# Apache < 2.4 ist highly broken!
+# Apache = 2.4 lüppt sehr gut
 # status: Allet geht!
 ##
 
