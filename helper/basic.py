@@ -41,8 +41,8 @@ def check_ordner(path):
 
 # Ordner erstellen
 # Python scheint asyncron zu arbeiten was Betriebsystem/Filesystem zugriff angeht.
-# os.access(path, os.F_OK) meldet vereinzelt gelöschte Ordner als vorhanden.
-# Könnte auch nur mitm Netzwerk Share zutun haben.
+# os.access(path, os.F_OK) meldet vereinzelt geloeschte Ordner als vorhanden.
+# Koennte auch nur mitm Netzwerk Share zutun haben.
 def make_ordner(path):
 	try:
 		os.mkdir(path)
