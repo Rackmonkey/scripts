@@ -4,7 +4,7 @@
 # Helper for meteor environment
 #
 # STATUS: untested
-# TODO: more verbosity and pm2 support
+# TODO: pm2 support and parallel dev+prod environment
 ##
 
 version = 0.1
@@ -23,11 +23,11 @@ meteor_port = 0;
 
 parser = argparse.ArgumentParser(description='meteor application helper')
 parser.add_argument("-b", "--build", help="build meteor app before running", default=False, action="store_true")
-parser.add_argument("--pm2", help="run with pm2", default=False, action="store_true")
+#parser.add_argument("--pm2", help="run with pm2", default=False, action="store_true")
 #parser.add_argument("-s","--set", help="var=value", default=False, action="store_true")
 parser.add_argument("-r", "--run", help="run app", default=False, action="store_true")
 parser.add_argument("-i", "--init", help="init the environment", default=False, action="store_true")
-parser.add_argument("-e", "--env", help="develop OR production", default="develop")
+parser.add_argument("-e", "--env", help="develop OR production OR pm2", default="develop")
 
 def verbose_command(cmd):
 	print  colored("command:", 'cyan'), colored(cmd, 'magenta')
