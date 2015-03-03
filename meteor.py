@@ -36,8 +36,9 @@ def verbose_command(cmd):
 	basics.command(cmd)
 
 def verbose_chdir(cmd):
-	print  colored("chdir:", 'cyan'), colored(cmd, 'magenta')
-	os.chdir(path_dev)
+	print colored("chdir:", 'cyan'), colored(cmd, 'magenta')
+	os.chdir(cmd)
+	print colored("path:", 'cyan'), colored(os.getcwd(), 'magenta')
 
 
 def check_port(port):
@@ -103,6 +104,7 @@ path_prod = path_env + "/" + folder_prod
 folder_config = "config"
 path_config = path_env + "/" + folder_config
 
+
 if(args["init"]):
 	init()
 
@@ -121,9 +123,12 @@ if(args["build"] or args["run"]):
 	mongo_url 		= config['ENV']['MONGO_URL']
 	
 	if(args["build"] and ["args.env"] != "develop"):
-		verbose_chdir(path_dev)
-		verbose_command("meteor build --directory " + path_prod)
-	
+		try:
+			verbose_chdir(path_dev)
+			verbose_command("meteor build --directory " + path_prod)
+		except (KeyboardInterrupt, SystemExit):
+			print colored("KeyboardInterrupt: stop script", "red")
+			sys.exit()
 	
 	if not(check_port(int(meteor_port))):
 		print colored("port is not free", "red")
@@ -135,14 +140,19 @@ if(args["build"] or args["run"]):
 		os.environ['ROOT_URL'] = root_url
 		os.environ['MONGO_URL'] = mongo_url
 	
-		if(args["env"] == "develop"):
-			verbose_chdir(path_dev)
-			verbose_command("meteor --port " + meteor_port)
-		
-		if(args["env"] == "production"):
-			verbose_chdir(path_prod + "/bundle/programs/server")
-			verbose_command("npm install")
-			verbose_chdir(path_prod)
-			verbose_command("node bundle/main.js")
-
+		try:
+			if(args["env"] == "develop" or args["env"] == "d"):
+				print  colored("env:", 'cyan'), colored("development", 'magenta')
+				verbose_chdir(path_dev)
+				verbose_command("meteor --port " + meteor_port)
+			
+			if(args["env"] == "production" or args["env"] == "p"):
+				print  colored("env:", 'cyan'), colored("production", 'magenta')
+				verbose_chdir(path_prod + "/bundle/programs/server")
+				verbose_command("npm install")
+				verbose_chdir(path_prod + "/bundle")
+				verbose_command("node main.js")
+		except (KeyboardInterrupt, SystemExit):
+			print colored("KeyboardInterrupt: beende script", "red")
+			sys.exit()
 
