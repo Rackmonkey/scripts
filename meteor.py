@@ -3,7 +3,8 @@
 #
 # Helper for meteor environment
 #
-# STATUS: untested
+# STATUS: part-tested
+# TODO: more verbosity and pm2 support
 ##
 
 version = 0.1
@@ -17,19 +18,21 @@ import subprocess
 
 config = configparser.ConfigParser()
 
+meteor_port = 0;
+
 parser = argparse.ArgumentParser(description='node.js application helper')
 parser.add_argument("-b", "--build", help="build meteor app before running", default=False, action="store_true")
 parser.add_argument("--pm2", help="run with pm2", default=False, action="store_true")
 parser.add_argument("-r", "--run", help="run app", default=False, action="store_true")
-parser.add_argument("-i", "--init", help="run app", default=False, action="store_true")
-parser.add_argument("-p", "--port", type=int, help="port for node app", required=True)
+parser.add_argument("-i", "--init", help="init the environment", default=False, action="store_true")
+#parser.add_argument("-p", "--port", type=int, help="port for meteor", required=True)
 parser.add_argument("-e", "--env", help="develop OR production", default="develop")
 
 #parser.add_argument("-o", "--overwrite", help="overwrite existent files", action="store_true", default=False)
 
 def check_port(port):
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	result = sock.connect_ex((remoteServerIP, port))
+	result = sock.connect_ex(("127.0.0.1", port))
 	sock.close()
 	return result
 
@@ -38,6 +41,44 @@ def check_file(path,file):
 		return 0
 	else:
 		return 1
+
+def init():
+	basics.make_ordner(path_prod)
+	basics.make_ordner(path_dev)
+	basics.make_ordner(path_dev)
+	config.add_section('ENV')
+
+	# ask for the basic config
+	root_url 			= raw_input("url (www.example.tld): ")
+	mongo_collection 	= raw_input("mongo collection (meteor): ")
+	mongo_user 			= raw_input("mongo user (-): ")
+	mongo_pass 			= raw_input("mongo pass (-): ")
+	mongo_ip 			= raw_input("mongo ip (127.0.0.1.): ")
+	mongo_port 			= raw_input("mongo port (27017): ")
+	meteor_port 		= raw_input("meteor port (8000): ")
+
+	# set defaults if the input ist empty
+	root_url 			= "http://" + root_url	if (len(root_url 		)>0) else 'http://example.tld'
+	mongo_collection 	= mongo_collection		if (len(mongo_collection)>0) else 'meteor' 
+	mongo_ip 			= mongo_ip 				if (len(mongo_ip  		)>0) else '127.0.0.1'
+	mongo_port 			= mongo_port 			if (len(mongo_port 		)>0) else '27017'	
+	meteor_port 		= meteor_port 			if (len(meteor_port 	)>0) else '8000'	
+
+	if(mongo_user == '' or mongo_pass == ''):
+		mongo_pp = ''
+	else:
+		mongo_pp = mongo_user + ':' + mongo_pass + '@'
+
+	# set config collection
+	config.set('ENV','ROOT_URL',root_url)
+	config.set('ENV','MONGO_URL','mongodb://' + mongo_pp + mongo_ip + ':' + mongo_port + '/' + mongo_collection)
+	config.set('ENV','PORT',meteor_port)
+	#config.set('ENV','HTTP_FORWARDED_COUNT','1')
+
+	# save config
+	configfile = open(path_config + "/meteor.conf",'w')
+	config.write(configfile)
+	configfile.close()
 
 args = vars(parser.parse_args())
 path_script = os.getcwd()
@@ -51,62 +92,43 @@ folder_config = "config"
 path_config = path_env + "/" + folder_config
 
 if(args["init"]):
-	basics.make_ordner(path_prod)
-	basics.make_ordner(path_dev)
-	basics.make_ordner(path_dev)
-	config.add_section('ENV')
+	init()
 
-	# ask for the basic config
-	root_url 			= raw_input("url (http://example.tld): ")
-	mongo_collection 	= raw_input("mongo collection (meteor): ")
-	mongo_user 			= raw_input("mongo user (-): ")
-	mongo_pass 			= raw_input("mongo pass (-): ")
-	mongo_ip 			= raw_input("mongo ip (127.0.0.1.): ")
-	mongo_port 			= raw_input("mongo port (27017): ")
 
-	# set defaults if the input ist empty
-	root_url 			= root_url 			if (root_url 			== '') else 'http://example.tld'
-	mongo_collection 	= mongo_collection	if (mongo_collection 	== '') else 'meteor' 
-	mongo_ip 			= mongo_ip 			if (mongo_ip  			== '') else '127.0.0.1'
-	mongo_port 			= mongo_port 		if (mongo_port 			== '') else '27017'	
-
-	# set config collection
-	config.set('ENV','ROOT_URL',root_url)
-	config.set('ENV','MONGO_URL','mongodb://' + mongo_user + ':' + mongo_pass + '@' + mongo_ip + ':' + mongo_port + '/' + mongo_collection)
-	config.set('ENV','PORT',args["port"])
-	#config.set('ENV','HTTP_FORWARDED_COUNT','1')
-
-	# save config
-	configfile = open(path_config + "/config.ini",'w')
-	status.write(configfile)
-	configfile.close()
-
-# config present? if not we stop.
-if not check_file(path_config + "/","meteor.conf"):
-	print "config is not present. please run with -i (--init)"
-	sys.exit()
-else:
+if(args["build"] or args["run"]):
+	# config present? if not we stop.
+	if not check_file(path_config + "/","meteor.conf"):
+		print "config is not present. please run with -i (--init)"
+		sys.exit()
+	
 	# read the config
 	config.read(path_config + "/meteor.conf")
-	
-	if not(check_port(args["port"])):
-		print "port is not free"
-		sys.exit()
+	meteor_port 	= config['ENV']['PORT']
+	root_url 		= config['ENV']['ROOT_URL']
+	mongo_url 		= config['ENV']['MONGO_URL']
 	
 	if(args["build"] and ["args.env"] != "develop"):
 		os.chdir(path_dev)
 		basics.command("meteor build --directory " + path_prod)
 	
+	
+	if not(check_port(int(meteor_port))):
+		print "port is not free"
+		sys.exit()
+	
 	if(args["run"]):
+		os.environ['PORT'] = meteor_port
+		os.environ['ROOT_URL'] = root_url
+		os.environ['MONGO_URL'] = mongo_url
+	
 		if(args["env"] == "develop"):
 			os.chdir(path_dev)
-			basics.command("./set_env.sh")
-			basics.command("meteor --port " + args["port"])
+			basics.command("meteor --port " + meteor_port)
 		
 		if(args["env"] == "production"):
 			os.chdir(path_prod + "/bundle/programs/server")
 			basics.command("npm install")
 			os.chdir(path_prod)
-			basics.command("./set_env.sh")
 			basics.command("node bundle/main.js")
+
 
