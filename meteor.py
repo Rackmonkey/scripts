@@ -21,15 +21,13 @@ config = configparser.ConfigParser()
 
 meteor_port = 0;
 
-parser = argparse.ArgumentParser(description='node.js application helper')
+parser = argparse.ArgumentParser(description='meteor application helper')
 parser.add_argument("-b", "--build", help="build meteor app before running", default=False, action="store_true")
 parser.add_argument("--pm2", help="run with pm2", default=False, action="store_true")
+#parser.add_argument("-s","--set", help="var=value", default=False, action="store_true")
 parser.add_argument("-r", "--run", help="run app", default=False, action="store_true")
 parser.add_argument("-i", "--init", help="init the environment", default=False, action="store_true")
-#parser.add_argument("-p", "--port", type=int, help="port for meteor", required=True)
 parser.add_argument("-e", "--env", help="develop OR production", default="develop")
-
-#parser.add_argument("-o", "--overwrite", help="overwrite existent files", action="store_true", default=False)
 
 def verbose_command(cmd):
 	print  colored("command:", 'cyan'), colored(cmd, 'magenta')
@@ -38,8 +36,7 @@ def verbose_command(cmd):
 def verbose_chdir(cmd):
 	print colored("chdir:", 'cyan'), colored(cmd, 'magenta')
 	os.chdir(cmd)
-	print colored("path:", 'cyan'), colored(os.getcwd(), 'magenta')
-
+	#print colored("path:", 'cyan'), colored(os.getcwd(), 'magenta')
 
 def check_port(port):
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -57,21 +54,20 @@ def init():
 	basics.make_ordner(path_prod)
 	basics.make_ordner(path_dev)
 	basics.make_ordner(path_dev)
-	config.add_section('ENV')
 
 	print "init environment"
 
 	# ask for the basic config
-	root_url 			= raw_input("url (www.example.tld): ")
+	url 				= raw_input("url (www.example.tld): ")
 	mongo_collection 	= raw_input("mongo collection (meteor): ")
 	mongo_user 			= raw_input("mongo user (-): ")
 	mongo_pass 			= raw_input("mongo pass (-): ")
-	mongo_ip 			= raw_input("mongo ip (127.0.0.1.): ")
+	mongo_ip 			= raw_input("mongo ip (127.0.0.1): ")
 	mongo_port 			= raw_input("mongo port (27017): ")
 	meteor_port 		= raw_input("meteor port (8000): ")
 
 	# set defaults if the input ist empty
-	root_url 			= "http://" + root_url	if (len(root_url 		)>0) else 'http://example.tld'
+	root_url 			= "http://" + url		if (len(url 		)>0) else 'http://example.tld'
 	mongo_collection 	= mongo_collection		if (len(mongo_collection)>0) else 'meteor' 
 	mongo_ip 			= mongo_ip 				if (len(mongo_ip  		)>0) else '127.0.0.1'
 	mongo_port 			= mongo_port 			if (len(mongo_port 		)>0) else '27017'	
@@ -83,10 +79,24 @@ def init():
 		mongo_pp = mongo_user + ':' + mongo_pass + '@'
 
 	# set config collection
+	config.add_section('ENV')
 	config.set('ENV','ROOT_URL',root_url)
 	config.set('ENV','MONGO_URL','mongodb://' + mongo_pp + mongo_ip + ':' + mongo_port + '/' + mongo_collection)
 	config.set('ENV','PORT',meteor_port)
 	#config.set('ENV','HTTP_FORWARDED_COUNT','1')
+
+	config.add_section('SETTING')
+	config.set('SETTING','environment',"develop")
+
+	config.add_section('STATUS')
+	config.set('STATUS','last_build',"")
+
+	config.add_section('PM2')
+	config.set('PM2','name',url)
+	config.set('PM2','mode',"fork_mode")
+	config.set('PM2','log_date_format',"YYYY-MM-DD")
+	config.set('PM2','log_file',"pm2.log")
+	config.set('PM2','merge_logs',true)
 
 	# save config
 	configfile = open(path_config + "/meteor.conf",'w')
@@ -153,6 +163,5 @@ if(args["build"] or args["run"]):
 				verbose_chdir(path_prod + "/bundle")
 				verbose_command("node main.js")
 		except (KeyboardInterrupt, SystemExit):
-			print colored("KeyboardInterrupt: beende script", "red")
+			print colored("KeyboardInterrupt: stop script", "red")
 			sys.exit()
-
