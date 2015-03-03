@@ -56,29 +56,39 @@ if(args["init"]):
 	basics.make_ordner(path_dev)
 	config.add_section('ENV')
 
-	root_url 			= raw_input("ROOT_URL: ")
-	mongo_user 			= raw_input("ROOT_URL: ")
-	mongo_pass 			= raw_input("ROOT_URL: ")
-	mongo_ip 			= raw_input("ROOT_URL: ")
-	mongo_port 			= raw_input("ROOT_URL: ")
-	mongo_collection 	= raw_input("ROOT_URL: ")
+	# ask for the basic config
+	root_url 			= raw_input("url (http://example.tld): ")
+	mongo_collection 	= raw_input("mongo collection (meteor): ")
+	mongo_user 			= raw_input("mongo user (-): ")
+	mongo_pass 			= raw_input("mongo pass (-): ")
+	mongo_ip 			= raw_input("mongo ip (127.0.0.1.): ")
+	mongo_port 			= raw_input("mongo port (27017): ")
 
+	# set defaults if the input ist empty
+	root_url 			= root_url 			if (root_url 			== '') else 'http://example.tld'
+	mongo_collection 	= mongo_collection	if (mongo_collection 	== '') else 'meteor' 
+	mongo_ip 			= mongo_ip 			if (mongo_ip  			== '') else '127.0.0.1'
+	mongo_port 			= mongo_port 		if (mongo_port 			== '') else '27017'	
+
+	# set config collection
 	config.set('ENV','ROOT_URL',root_url)
 	config.set('ENV','MONGO_URL','mongodb://' + mongo_user + ':' + mongo_pass + '@' + mongo_ip + ':' + mongo_port + '/' + mongo_collection)
 	config.set('ENV','PORT',args["port"])
 	#config.set('ENV','HTTP_FORWARDED_COUNT','1')
-	
+
+	# save config
 	configfile = open(path_config + "/config.ini",'w')
 	status.write(configfile)
 	configfile.close()
 
+# config present? if not we stop.
 if not check_file(path_config + "/","meteor.conf"):
 	print "config is not present. please run with -i (--init)"
 	sys.exit()
-
-config.read(path_config + "/meteor.conf")
-
 else:
+	# read the config
+	config.read(path_config + "/meteor.conf")
+	
 	if not(check_port(args["port"])):
 		print "port is not free"
 		sys.exit()
