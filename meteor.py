@@ -3,12 +3,13 @@
 #
 # Helper for meteor environment
 #
-# STATUS: part-tested
+# STATUS: untested
 # TODO: more verbosity and pm2 support
 ##
 
 version = 0.1
 
+from termcolor import colored
 import socket
 import helper.basic as basics
 import sys, os
@@ -30,6 +31,15 @@ parser.add_argument("-e", "--env", help="develop OR production", default="develo
 
 #parser.add_argument("-o", "--overwrite", help="overwrite existent files", action="store_true", default=False)
 
+def verbose_command(cmd):
+	print  colored("command:", 'cyan'), colored(cmd, 'magenta')
+	basics.command(cmd)
+
+def verbose_chdir(cmd):
+	print  colored("chdir:", 'cyan'), colored(cmd, 'magenta')
+	os.chdir(path_dev)
+
+
 def check_port(port):
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	result = sock.connect_ex(("127.0.0.1", port))
@@ -47,6 +57,8 @@ def init():
 	basics.make_ordner(path_dev)
 	basics.make_ordner(path_dev)
 	config.add_section('ENV')
+
+	print "init environment"
 
 	# ask for the basic config
 	root_url 			= raw_input("url (www.example.tld): ")
@@ -98,37 +110,39 @@ if(args["init"]):
 if(args["build"] or args["run"]):
 	# config present? if not we stop.
 	if not check_file(path_config + "/","meteor.conf"):
-		print "config is not present. please run with -i (--init)"
+		print colored("config is not present. please run with -i (--init)", "red")
 		sys.exit()
 	
 	# read the config
+	print  colored("read:", 'cyan'), colored("config (" + path_config + "/meteor.conf)", 'magenta')
 	config.read(path_config + "/meteor.conf")
 	meteor_port 	= config['ENV']['PORT']
 	root_url 		= config['ENV']['ROOT_URL']
 	mongo_url 		= config['ENV']['MONGO_URL']
 	
 	if(args["build"] and ["args.env"] != "develop"):
-		os.chdir(path_dev)
-		basics.command("meteor build --directory " + path_prod)
+		verbose_chdir(path_dev)
+		verbose_command("meteor build --directory " + path_prod)
 	
 	
 	if not(check_port(int(meteor_port))):
-		print "port is not free"
+		print colored("port is not free", "red")
 		sys.exit()
 	
 	if(args["run"]):
+		print  colored("set:", 'cyan'), colored("environment variables", 'magenta')
 		os.environ['PORT'] = meteor_port
 		os.environ['ROOT_URL'] = root_url
 		os.environ['MONGO_URL'] = mongo_url
 	
 		if(args["env"] == "develop"):
-			os.chdir(path_dev)
-			basics.command("meteor --port " + meteor_port)
+			verbose_chdir(path_dev)
+			verbose_command("meteor --port " + meteor_port)
 		
 		if(args["env"] == "production"):
-			os.chdir(path_prod + "/bundle/programs/server")
-			basics.command("npm install")
-			os.chdir(path_prod)
-			basics.command("node bundle/main.js")
+			verbose_chdir(path_prod + "/bundle/programs/server")
+			verbose_command("npm install")
+			verbose_chdir(path_prod)
+			verbose_command("node bundle/main.js")
 
 
