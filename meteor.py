@@ -8,6 +8,8 @@
 ##
 
 version = 0.1
+meteor_port = 0;
+
 
 from termcolor import colored
 import socket
@@ -16,18 +18,19 @@ import sys, os
 import argparse
 import configparser
 import subprocess
+import demjson
 
 config = configparser.ConfigParser()
-
-meteor_port = 0;
-
 parser = argparse.ArgumentParser(description='meteor application helper')
-parser.add_argument("-b", "--build", help="build meteor app before running", default=False, action="store_true")
+parser.add_argument("-b", "--build", help="build meteor app (pre running)", default=False, action="store_true")
 #parser.add_argument("--pm2", help="run with pm2", default=False, action="store_true")
 #parser.add_argument("-s","--set", help="var=value", default=False, action="store_true")
 parser.add_argument("-r", "--run", help="run app", default=False, action="store_true")
 parser.add_argument("-i", "--init", help="init the environment", default=False, action="store_true")
 parser.add_argument("-e", "--env", help="develop OR production OR pm2")
+parser.add_argument("--backup", help="backup Mongo DB to file (pre running)")
+parser.add_argument("--restore", help="restore Mongo DB from file (pre running)")
+parser.add_argument("--list", help="list Mongo DB backups")
 
 def verbose_command(cmd):
 	print  colored("command:", 'cyan'), colored(cmd, 'magenta')
@@ -50,10 +53,16 @@ def check_file(path,file):
 	else:
 		return 1
 
+def check_config():
+	if not check_file(path_config + "/","meteor.conf"):
+		print colored("config is not present. please run with -i (--init)", "red")
+		sys.exit()
+
 def init():
 	basics.make_ordner(path_prod)
 	basics.make_ordner(path_dev)
 	basics.make_ordner(path_config)
+	basics.make_ordner(path_backup)
 
 	print "init environment"
 
@@ -83,12 +92,22 @@ def init():
 	config.add_section('DEV')
 	config.set('DEV','ROOT_URL',"")
 	config.set('DEV','MONGO_URL',"")
+	config.set('DEV','MONGO_USER',"")
+	config.set('DEV','MONGO_PASS',"")
+	config.set('DEV','MONGO_IP',"127.0.0.1")
+	config.set('DEV','MONGO_PORT',"3001")
+	config.set('DEV','MONGO_COLLECTION',"meteor")
 	config.set('DEV','PORT',"3000")
 	#config.set('ENV','HTTP_FORWARDED_COUNT','1')
 
 	config.add_section('PROD')
 	config.set('PROD','ROOT_URL',root_url)
 	config.set('PROD','MONGO_URL','mongodb://' + mongo_pp + mongo_ip + ':' + mongo_port + '/' + mongo_collection)
+	config.set('PROD','MONGO_USER',mongo_user)
+	config.set('PROD','MONGO_PASS',mongo_pass)
+	config.set('PROD','MONGO_IP',mongo_ip)
+	config.set('PROD','MONGO_PORT',mongo_port)
+	config.set('PROD','MONGO_COLLECTION',mongo_collection)
 	config.set('PROD','PORT',meteor_port)
 	#config.set('ENV','HTTP_FORWARDED_COUNT','1')
 
@@ -98,17 +117,28 @@ def init():
 	config.add_section('STATUS')
 	config.set('STATUS','last_build',"")
 
-	config.add_section('PM2')
-	config.set('PM2','name',pm2_name)
-	config.set('PM2','mode',"fork_mode")
-	config.set('PM2','log_date_format',"YYYY-MM-DD")
-	config.set('PM2','log_file',"pm2.log")
-	config.set('PM2','merge_logs',"1")
-
 	# save config
 	configfile = open(path_config + "/meteor.conf",'w')
 	config.write(configfile)
 	configfile.close()
+	json_data = '{ "name": "' + pm2_name + '", \
+		"script": "../app/bundle/main.js", \
+		"log_date_format": "YYYY-MM-DD", \
+    	"exec_mode": "fork_mode", \
+    	"env": { \
+    	    "PORT": ' + config['PROD']['PORT'] + ', \
+    	    "MONGO_URL": "' + config['PROD']['MONGO_URL'] + '", \
+    	    "ROOT_URL": "' + config['PROD']['ROOT_URL'] + '", \
+    	    "log_file": "pm2.log", \
+    	    "merge_logs": true \
+      	}\
+	}'
+
+	json_file = open(path_config + "/pm2.json",'w')
+	json_file.write(json_data)
+	json_file.close()
+
+
 
 args = vars(parser.parse_args())
 path_script = os.getcwd()
@@ -120,64 +150,78 @@ folder_prod = "app"
 path_prod = path_env + "/" + folder_prod
 folder_config = "config"
 path_config = path_env + "/" + folder_config
+folder_backup = "backup"
+path_backup = path_env + "/" + folder_backup
+
+try:
+	if(args["init"]):
+		init()
 
 
-if(args["init"]):
-	init()
+	if(args["build"] or args["run"] or args["backup"]):
 
-
-if(args["build"] or args["run"]):
-	# config present? if not we stop.
-	if not check_file(path_config + "/","meteor.conf"):
-		print colored("config is not present. please run with -i (--init)", "red")
-		sys.exit()
+		# config present? if not we stop.
+		check_config()
+		
+		# read the config
+		print  colored("read:", 'cyan'), colored("config (" + path_config + "/meteor.conf)", 'magenta')
+		config.read(path_config + "/meteor.conf")
 	
-	# read the config
-	print  colored("read:", 'cyan'), colored("config (" + path_config + "/meteor.conf)", 'magenta')
-	config.read(path_config + "/meteor.conf")
+		if(args["env"] == "develop" or args["env"] == "d"):
+			print  colored("set:", 'cyan'), colored("environment to develop", 'magenta')
+			config['SETTING']['environment'] = "develop"
+		if(args["env"] == "production" or args["env"] == "p"):
+			print  colored("set:", 'cyan'), colored("environment to production", 'magenta')
+			config['SETTING']['environment'] = "production"
+		if(args["env"] == "pm2"):
+			print  colored("set:", 'cyan'), colored("environment to pm2", 'magenta')
+			config['SETTING']['environment'] = "pm2"
+		configfile = open(path_config + "/meteor.conf",'w')
+		config.write(configfile)
+		configfile.close()
+		env = config['SETTING']['environment']
+		
+		if(env == "develop"):
+			env_conf = "DEV"
+		else:
+			env_conf = "PROD"
 
-	if(args["env"] == "develop" or args["env"] == "d"):
-		print  colored("set:", 'cyan'), colored("environment to develop", 'magenta')
-		config['SETTING']['environment'] = "develop"
-	if(args["env"] == "production" or args["env"] == "p"):
-		print  colored("set:", 'cyan'), colored("environment to production", 'magenta')
-		config['SETTING']['environment'] = "production"
-	if(args["env"] == "pm2"):
-		print  colored("set:", 'cyan'), colored("environment to pm2", 'magenta')
-		config['SETTING']['environment'] = "pm2"
-	configfile = open(path_config + "/meteor.conf",'w')
-	config.write(configfile)
-	configfile.close()
-	env = config['SETTING']['environment']
+		if(args["backup"]):
+			check_config()
+			command =  "mongodump -h " + config[env_conf]['MONGO_IP']
+			command += " --port " + config[env_conf]['MONGO_PORT']
+			command += " -d " + config[env_conf]['MONGO_COLLECTION']
+			if not (config[env_conf]['MONGO_USER'] == "" or config[env_conf]['MONGO_PASS'] == ""):
+				command += " -u " + config[env_conf]['MONGO_USER']
+				command += " -p " + config[env_conf]['MONGO_PASS']
+			command += " -v "
+			command += ' -o "' + path_backup + '/' + args["backup"] + '"'
+			verbose_command(command)
 
-
-
-	if(env == "develop"):
-		meteor_port 	= config['DEV']['PORT']
-		root_url 		= config['DEV']['ROOT_URL']
-		mongo_url 		= config['DEV']['MONGO_URL']
-	elif(env == "production"):
-		meteor_port 	= config['PROD']['PORT']
-		root_url 		= config['PROD']['ROOT_URL']
-		mongo_url 		= config['PROD']['MONGO_URL']
+		if(args["restore"]):
+			check_config()
+	
+		if(env == "develop"):
+			meteor_port 	= config['DEV']['PORT']
+			root_url 		= config['DEV']['ROOT_URL']
+			mongo_url 		= config['DEV']['MONGO_URL']
+		else:
+			meteor_port 	= config['PROD']['PORT']
+			root_url 		= config['PROD']['ROOT_URL']
+			mongo_url 		= config['PROD']['MONGO_URL']
 
 	
-	if(args["build"] and ["args.env"] != "develop"):
-		try:
-			verbose_chdir(path_dev)
-			verbose_command("meteor build --directory " + path_prod)
-		except (KeyboardInterrupt, SystemExit):
-			print colored("KeyboardInterrupt: stop script", "red")
-			sys.exit()
-	
-	if not(check_port(int(meteor_port))):
-		print colored("port is not free", "red")
-		sys.exit()
-	
-	if(args["run"]):
-		print  colored("set:", 'cyan'), colored("environment variables", 'magenta')
-	
-		try:
+		
+		if(args["build"] and ["args.env"] != "develop"):
+				verbose_chdir(path_dev)
+				verbose_command("meteor build --directory " + path_prod)
+		
+		if(args["run"]):
+			print  colored("set:", 'cyan'), colored("environment variables", 'magenta')
+			if not(check_port(int(meteor_port))):
+				print colored("port is not free: " + meteor_port, "red")
+				sys.exit()
+
 			if(env == "develop"):
 				os.environ['PORT'] = meteor_port
 				#os.environ['ROOT_URL'] = root_url
@@ -198,7 +242,15 @@ if(args["build"] or args["run"]):
 
 			if(env == "pm2"):
 				print  colored("env:", 'cyan'), colored("pm2", 'magenta')
+				if not check_file(path_config + "/","pm2.json"):
+					print colored("pm2.json is not present. please run with -i (--init)", "red")
+					sys.exit()
+				verbose_command("pm2 start ../config/pm2.json")
 
-		except (KeyboardInterrupt, SystemExit):
-			print colored("KeyboardInterrupt: stop script", "red")
-			sys.exit()
+
+except (SystemExit):
+	print colored("SystemExit: stop script", "red")
+	sys.exit()
+except (KeyboardInterrupt):
+	print colored("KeyboardInterrupt: stop script", "red")
+	sys.exit()

@@ -5,24 +5,29 @@ awesome tool to manage an meteor environment
 
 Clone this repo to <code>$path/scripts</code> (or some other subfolder of $path) and execute:
 
-<code>./meteor.py -i</code>
+```
+./meteor.py -i
+```
 
-the script will make the <code>$path/app</code> and <code>$path/develop</code> folders. Then ask for the environment variables like mongo connection and ports.
+the script will make the <code>$path/app</code>, <code>$path/develop</code> and <code>$path/config</code> folders. Then ask for the environment variables like mongo connection and ports. By default the connection options for develop environment are the defaults of meteor. If you want to use other settings you can modify the <code>$path/config/meteor.conf</code> by yourself.
 
 After initialisation you can run your Meteor App in develop or production environment. PM2 and git support will be added soon.
 
-<code>
-	./meteor.py -r # run default environment (develop)  
-	./meteor.py -r -e production # run production environment  
-	./meteor.py -b # build the app (files in develop are convertet to normal node.js code and saved in app folder  
-	./meteor.py -r -b -e production # run production environment but build it before
-</code>
+```
+./meteor.py -r # run default environment (develop)  
+./meteor.py -r -e production # run production environment  
+./meteor.py -b # build the app (files in develop are convertet to normal node.js code and saved in app folder  
+./meteor.py -r -b -e production # run production environment but build it before
+```
 
 ## install ##
 
-<code>
+```
 $ apt-get install python-pip  
 $ pip install termcolor  
 $ pip install configparser  
+$ pip install demjson 
 $ git clone https://github.com/Rackmonkey/scripts
-</code>
+$ git cd scripts
+$ ./meteor.py -i
+```
