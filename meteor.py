@@ -28,6 +28,8 @@ parser.add_argument("-b", "--build", help="build meteor app (pre running)", defa
 parser.add_argument("-r", "--run", help="run app", default=False, action="store_true")
 parser.add_argument("-i", "--init", help="init the environment", default=False, action="store_true")
 parser.add_argument("-e", "--env", help="develop OR production OR pm2")
+parser.add_argument("-d", "--deploy", help="deploy to server", default=False, action="store_true")
+parser.add_argument("--remote_pm2", help="command to remote pm2")
 parser.add_argument("--backup", help="backup Mongo DB to file (pre running)")
 parser.add_argument("--restore", help="restore Mongo DB from file (pre running)")
 parser.add_argument("--list", help="list Mongo DB backups")
@@ -111,6 +113,20 @@ def init():
 	config.set('PROD','PORT',meteor_port)
 	#config.set('ENV','HTTP_FORWARDED_COUNT','1')
 
+	config.add_section('DEPLOY')
+	config.set('DEPLOY','SERVER_IP',"127.0.0.1")
+	config.set('DEPLOY','SERVER_USER',"user")
+	config.set('DEPLOY','SERVER_PW',"")
+	config.set('DEPLOY','ROOT_URL',root_url)
+	config.set('DEPLOY','MONGO_URL','mongodb://' + mongo_pp + mongo_ip + ':' + mongo_port + '/' + mongo_collection)
+	config.set('DEPLOY','MONGO_USER',mongo_user)
+	config.set('DEPLOY','MONGO_PASS',mongo_pass)
+	config.set('DEPLOY','MONGO_IP',mongo_ip)
+	config.set('DEPLOY','MONGO_PORT',mongo_port)
+	config.set('DEPLOY','MONGO_COLLECTION',mongo_collection)
+	config.set('DEPLOY','PORT',meteor_port)
+	#config.set('ENV','HTTP_FORWARDED_COUNT','1')
+
 	config.add_section('SETTING')
 	config.set('SETTING','environment',"develop")
 
@@ -157,8 +173,7 @@ try:
 	if(args["init"]):
 		init()
 
-
-	if(args["build"] or args["run"] or args["backup"]):
+	if(args["build"] or args["run"] or args["backup"] or args["deploy"] or args["remote_pm2"]):
 
 		# config present? if not we stop.
 		check_config()
@@ -210,14 +225,44 @@ try:
 			root_url 		= config['PROD']['ROOT_URL']
 			mongo_url 		= config['PROD']['MONGO_URL']
 
-	
+		if(args["remote_pm2"]):
+			server = config['DEPLOY']['SERVER_USER'] + "@" + config['DEPLOY']['SERVER_IP']
+			verbose_chdir(path_prod)
+			verbose_command("ssh "+server+" \""\
+							"pm2 " + args["remote_pm2"] + \
+							"\"")
 		
 		if(args["build"] and ["args.env"] != "develop"):
 				verbose_chdir(path_dev)
 				verbose_command("meteor build --directory " + path_prod)
-		
+
+		if(args["deploy"]):
+			server = config['DEPLOY']['SERVER_USER'] + "@" + config['DEPLOY']['SERVER_IP']
+			path = config['DEPLOY']['SERVER_PATH']
+			mongo = config['DEPLOY']['MONGO_URL']
+			port = config['DEPLOY']['PORT']
+			root_url = config['DEPLOY']['ROOT_URL']
+			verbose_chdir(path_prod)
+			verbose_command("rsync -avze ssh bundle "+server+":"+path+" ")
+			verbose_command("rsync -avze ssh ../config/deploy_pm2.json "+server+":"+path+"/../config/pm2.json ")
+			#verbose_chdir(path_prod + "/bundle/programs/server")
+			verbose_command("ssh "+server+" \""\
+							"cd "+path+"/bundle/programs/server;"\
+							"npm install;"\
+							"export MONGO_URL='"+mongo+"';"\
+							"export PORT="+port+";"\
+							"export ROOT_URL='"+root_url+"';"\
+							"\"")
+			verbose_command("ssh "+server+" \""\
+							"pm2 delete all; pm2 start config/pm2.json"\
+							"\"")
+
+
 		if(args["run"]):
 			print  colored("set:", 'cyan'), colored("environment variables", 'magenta')
+			if not(check_port(int(meteor_port))):
+				if(env == "pm2"):
+					verbose_command("pm2 delete all");
 			if not(check_port(int(meteor_port))):
 				print colored("port is not free: " + meteor_port, "red")
 				sys.exit()
@@ -245,6 +290,9 @@ try:
 				if not check_file(path_config + "/","pm2.json"):
 					print colored("pm2.json is not present. please run with -i (--init)", "red")
 					sys.exit()
+				verbose_chdir(path_prod + "/bundle/programs/server")
+				verbose_command("npm install")
+				verbose_chdir(path_script)
 				verbose_command("pm2 start ../config/pm2.json")
 
 
