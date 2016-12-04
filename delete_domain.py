@@ -29,20 +29,19 @@ def deactivate_vhost(domain):
 def remove_configs(domain):
 	if (basics.check_file("/etc/php5/fpm/pool.d/",domain + ".conf")):
 		basics.command("rm " + "/etc/php5/fpm/pool.d/" + domain + ".conf")
-	if (basics.check_file("/etc/apache2/sites-available/",domain + fileSuffix)):
-		basics.command("/etc/apache2/sites-available/" + domain + fileSuffix)
+	if (basics.check_file("/etc/apache2/sites-available/",domain + ".conf")):
+		basics.command("/etc/apache2/sites-available/" + domain + ".conf")
 
 def restart_services():
 	basics.command("service apache2 reload")
-	basics.command("service php5-fpm force-reload")
 
 def delete_user(domain):
 	basics.command("userdel -r -f " + domain)
 
 def check_if_vhost(domain):
-	if (basics.check_file("/etc/php5/fpm/pool.d/",domain + ".conf")) AND (basics.check_file("/etc/apache2/sites-available/",domain + fileSuffix)):
+	if (basics.check_file("/etc/php5/fpm/pool.d/",domain + ".conf")) and (basics.check_file("/etc/apache2/sites-available/",domain + ".conf")):
 		return True
-	else
+	else:
 		return False
 
 # argumente auswerten
@@ -58,11 +57,11 @@ domain = args["domain"]
 homeRoot = args["home"]
 #verwrite = args["overwrite"]
 
-if check_if_vhost():
+if check_if_vhost(domain):
 	deactivate_vhost(domain)
 	remove_configs(domain)
 	move_folder(domain, homeRoot)
 	delete_user(domain) # delete user with home dir
 	restart_services()
-else
+else:
 	print("value is no valid vhost")

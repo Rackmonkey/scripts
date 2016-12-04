@@ -1,4 +1,4 @@
-#!/usr/bin/python3.2
+#!/usr/bin/python3.4
 #
 # written by David Bauer, initial start 17.09.2014
 # 
