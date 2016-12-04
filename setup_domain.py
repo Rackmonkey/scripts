@@ -1,4 +1,4 @@
-#!/usr/bin/python3.2
+#!/usr/bin/python3.4
 # written by David Bauer, initial start 11.09.2014
 # Inspiriert von https://github.com/bastelfreak/scripts/blob/master/setup_domain.sh
 # 

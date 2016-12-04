@@ -11,8 +11,8 @@ basics.command("aptitude -y update 1>/dev/null")
 print("sourcen geupdatet")
 
 # add more cool tools
-basics.command("aptitude install apache2-mpm-worker/jessie")
-basics.command("aptitude install apache2-utils/jessie libapache2-mod-fastcgi/jessie")
+basics.command("aptitude install apache2-mpm-worker")
+basics.command("aptitude install apache2-utils libapache2-mod-fastcgi")
 basics.command("aptitude install php5-fpm")
 basics.command("a2enmod actions")
 basics.command("service apache2 restart")
