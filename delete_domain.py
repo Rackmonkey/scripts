@@ -21,7 +21,7 @@ version = 1.0
 
 def move_folder(domain, homeRoot):
 	basics.make_ordner("/home/removed")
-	basics.command("mv \""+homeRoot+"/"+domain+"\" \""+homeRoot+"/removed/"+domain+"_"+time.time() +"\"")
+	basics.command("mv \""+homeRoot+"/"+domain+"\" \""+homeRoot+"/removed/"+domain+"_"+ str(time.time()) +"\"")
 
 def deactivate_vhost(domain):
 	basics.command("/usr/sbin/a2dissite " + domain)
@@ -31,9 +31,6 @@ def remove_configs(domain):
 		basics.command("rm " + "/etc/php5/fpm/pool.d/" + domain + ".conf")
 	if (basics.check_file("/etc/apache2/sites-available/",domain + ".conf")):
 		basics.command("/etc/apache2/sites-available/" + domain + ".conf")
-
-def restart_services():
-	basics.command("service apache2 reload")
 
 def delete_user(domain):
 	basics.command("userdel -r -f " + domain)
@@ -59,9 +56,16 @@ homeRoot = args["home"]
 
 if check_if_vhost(domain):
 	deactivate_vhost(domain)
+	print("deaktivate vhost")
+	basics.command("service apache2 reload")
+	print("service apache2 reload")
 	remove_configs(domain)
+	print("remove configs")
+	basics.command("service php5-fpm reload")
+	print("service php5-fpm reload")
 	move_folder(domain, homeRoot)
+	print("move folder")
 	delete_user(domain) # delete user with home dir
-	restart_services()
+	print("delete user")
 else:
 	print("value is no valid vhost")
