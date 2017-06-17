@@ -1,4 +1,14 @@
 <VirtualHost *:80>
+  ServerName [domain]
+  ProxyPreserveHost On
+  Redirect permanent / https://[domain]/
+</VirtualHost>
+
+<VirtualHost *:443>
+        SSLCertificateFile /etc/letsencrypt/live/[domain]/cert.pem
+        SSLCertificateKeyFile /etc/letsencrypt/live/[domain]/privkey.pem
+        SSLCertificateChainFile /etc/letsencrypt/live/[domain]/chain.pem
+
 	DocumentRoot [root_path]/[domain]/htdocs
 	ServerName [domain]
 	ServerAdmin admin@[domain]

@@ -3,7 +3,7 @@
 # Inspiriert von https://github.com/bastelfreak/scripts/blob/master/setup_domain.sh
 # 
 # Apache < 2.4 ist highly broken!
-# Apache = 2.4 lüppt sehr gut
+# Apache = 2.4 lueppt sehr gut
 # status: Allet geht!
 ##
 
@@ -58,32 +58,25 @@ def get_highest_fpm_port():
 		            	max_port = int(port[1])
 	return max_port
 
-def add_apache_vhost(domain,homeRoot,fpmPort):
-	# wir haben nach dem höchsten gesucht und brauchen nun +1
+def add_apache_vhost(domain,homeRoot,fpmPort,nossl=False):
+	# wir haben nach dem hoechsten gesucht und brauchen nun +1
 	fpmPort += 1
-	apache2vier = 0
-	fileSuffix = ""
-	apacheVersion = subprocess.getoutput("dpkg-query -W apache2-mpm-worker")
-	if(apacheVersion.find('2.4.') != -1):
-		apache2vier = 1 
-		fileSuffix = ".conf"
-
-	if not(basics.check_file("/etc/apache2/sites-available/",domain + fileSuffix)):
-		if(apache2vier):
-			templateFile = open("templates/apache_conf_2.4.txt", "r")
-		else:
+	if not(basics.check_file("/etc/apache2/sites-available/",domain + ".conf")):
+		if nossl:
 			templateFile = open("templates/apache_conf.txt", "r")
+		else:
+			templateFile = open("templates/apache_conf_ssl.txt", "r")
 		template = templateFile.read();
 		templateFile.close();
 		template = template.replace("[root_path]",homeRoot);
 		template = template.replace("[domain]",domain);
 		template = template.replace("[port]",str(fpmPort));
-		configFile = open("/etc/apache2/sites-available/" + domain + fileSuffix, "w")
+		configFile = open("/etc/apache2/sites-available/" + domain + ".conf", "w")
 		configFile.write(template)
 		configFile.close();
 
 def add_phpfpm_conf(domain,homeRoot,fpmPort):
-	# wir haben nach dem höchsten gesucht und brauchen nun +1
+	# wir haben nach dem hoechsten gesucht und brauchen nun +1
 	fpmPort += 1
 	if not(basics.check_file("/etc/php5/fpm/pool.d/",domain + ".conf")):
 		templateFile = open("templates/php-fpm_conf.txt", "r")
@@ -96,6 +89,9 @@ def add_phpfpm_conf(domain,homeRoot,fpmPort):
 		configFile.write(template)
 		configFile.close();
 	basics.command("service php5-fpm force-reload")
+
+def lets_encrypt(domain,homeRoot):
+	basics.command("certbot --apache certonly --webroot -w " + homeRoot + " -d " + domain )
 
 def replace_attribute(attr,value,file):
 	# sucht nach Zeile mit prefix (attr) und setzt das Value neu.
@@ -120,17 +116,22 @@ def restart_services():
 parser = argparse.ArgumentParser(description='Anlegen einer neuen Domain')
 #parser.add_argument("-h", help="print this help")
 parser.add_argument("-n", "--home", help="home root path. default: \"/home\"", default="/home")
+parser.add_argument("--nossl", help="no ssl certificate for me", action='store_true')
 parser.add_argument("-d", "--domain", help="domain name", required=True)
 #parser.add_argument("-o", "--overwrite", help="overwrite existent files", action="store_true", default=False)
 args = vars(parser.parse_args())
 
 domain = args["domain"]
 homeRoot = args["home"]
+nossl = args["ssl"]
+
 #verwrite = args["overwrite"]
 
 create_www_user(domain, homeRoot)
 create_www_home(domain, homeRoot)
 fpmPort = get_highest_fpm_port()
-add_apache_vhost(domain,homeRoot,fpmPort)
+if not nossl:
+	lets_encrypt(domain,homeRoot)
+add_apache_vhost(domain,homeRoot,fpmPort,nossl)
 add_phpfpm_conf(domain,homeRoot,fpmPort)
 enable_apache_site(domain)

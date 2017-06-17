@@ -14,7 +14,7 @@ print("sourcen geupdatet")
 basics.command("aptitude install apache2-mpm-worker")
 basics.command("aptitude install apache2-utils libapache2-mod-fastcgi")
 basics.command("aptitude install php5-fpm")
-basics.command("a2enmod actions")
+basics.command("a2enmod actions ssl rewrite auth_digest proxy")
 basics.command("service apache2 restart")
 
 #basics.command('echo "apache2-mpm-worker 2.4 (sid), php5-fpm 5.6 (sid) and fastcgi setup" >> /etc/motd')
