@@ -13,25 +13,66 @@ import sys, os
 import argparse
 import configparser
 import subprocess
+from termcolor import colored
 
 version = 1.0
+
+# argumente auswerten
+
+parser = argparse.ArgumentParser(description='Anlegen einer neuen Domain')
+#parser.add_argument("-h", help="print this help")
+parser.add_argument("-n", "--home", help="home root path. default: \"/home\"", default="/home")
+parser.add_argument("--nossl", help="no ssl certificate for me", action='store_true')
+parser.add_argument("-d", "--domain", help="domain name", required=True)
+parser.add_argument("-f","--force", help="dont ask, just fucking do it!", action='store_true')
+parser.add_argument("-t","--test", help="just test the command output", action='store_true')
+parser.add_argument("-v","--verbose", help="verbose", action='store_true')
+#parser.add_argument("-o", "--overwrite", help="overwrite existent files", action="store_true", default=False)
+args = vars(parser.parse_args())
+
+domain = args["domain"]
+homeRoot = args["home"]
+nossl = True if args["ssl"] else False
+force = True if args["force"] else False
+test = True if args["test"] else False
+verbose = True if args["verbose"] else False
+
+if verbose:
+	basics.set_print_command(True)
+
+#overwrite = args["overwrite"]
+
+print  colored("setup domain script", 'red')
+print  colored("homeroot:", 'cyan'), colored(homeRoot, 'magenta')
+print  colored("domain:", 'cyan'), colored(domain, 'magenta')
+if nossl:
+	print  colored("SSL:", 'cyan'), colored("no", 'magenta')
+else:
+	print  colored("SSL:", 'cyan'), colored("yes", 'magenta')
+
+yesNo = basics.query_yes_no("Do you want to create this vHost?")
+if force: 
+	yesNo = "yes"
 
 # ======================================================================================================================
 # ======================================================================================================================
 #	Funktionen
 # ======================================================================================================================
 
-
-def add_domain_to_dns(domain):
+def add_domain_to_dns():
+	global domain
 	return true
 
-def create_www_user(domain, homeRoot):
+def create_www_user():
+	global domain, homeRoot
 	if(basics.command("grep --quiet \"" + domain + "\" /etc/passwd")):
 		basics.command("adduser --force-badname --disabled-password --gecos \"\" --home \""+ homeRoot + "/" + domain +"\" --shell /bin/bash \"" + domain + "\"")
 		#basics.command("usermod --append --groups  www-data")
 		basics.command("usermod --append --groups www-data \""+ domain +"\"")
 
-def create_www_home(domain, homeRoot):
+def create_www_home():
+	global domain, homeRoot
+	print  colored("create www home", 'red')
 	path = homeRoot + "/" + domain
 	basics.make_ordner(path + "/htdocs")
 	basics.make_ordner(path + "/tmp")
@@ -40,11 +81,12 @@ def create_www_home(domain, homeRoot):
 	basics.command("chown --recursive \""+domain+":"+domain+"\" \""+homeRoot+"/"+domain+"\"")
 	basics.command("chmod 755 --recursive \""+homeRoot+"/"+domain+"\"")
 
-def get_highest_fpm_port():
+def get_fpm_port():
 	# the default port from the standard php-fpm config is 9000
-	max_port = 9001
+	max_port = 9001 #init for first vhost
 	port = 0
 	conf = configparser.ConfigParser()
+	print  colored("Searching for highest FPM Port", 'red')
 
 	for root, dirs, files in os.walk("/etc/php5/fpm/pool.d/"):
 	    for file in files:
@@ -56,11 +98,14 @@ def get_highest_fpm_port():
 		            port = ipPort.split(":")
 		            if(max_port < int(port[1])):
 		            	max_port = int(port[1])
-	return max_port
 
-def add_apache_vhost(domain,homeRoot,fpmPort,nossl=False):
-	# wir haben nach dem hoechsten gesucht und brauchen nun +1
-	fpmPort += 1
+	print  colored("Found highest Port: ", 'cyan'), colored(max_port, 'magenta')
+	print  colored("Port for new vHost: ", 'cyan'), colored(max_port+1 , 'magenta')
+	return max_port + 1
+
+def add_apache_vhost():
+	global domain, homeRoot, nossl, fpmPort
+	print  colored("add apache vhost", 'red')
 	if not(basics.check_file("/etc/apache2/sites-available/",domain + ".conf")):
 		if nossl:
 			templateFile = open("templates/apache_conf.txt", "r")
@@ -75,9 +120,9 @@ def add_apache_vhost(domain,homeRoot,fpmPort,nossl=False):
 		configFile.write(template)
 		configFile.close();
 
-def add_phpfpm_conf(domain,homeRoot,fpmPort):
-	# wir haben nach dem hoechsten gesucht und brauchen nun +1
-	fpmPort += 1
+def add_phpfpm_conf():
+	global domain, homeRoot, fpmPort
+	print  colored("add php fpm conf", 'red')
 	if not(basics.check_file("/etc/php5/fpm/pool.d/",domain + ".conf")):
 		templateFile = open("templates/php-fpm_conf.txt", "r")
 		template = templateFile.read();
@@ -90,20 +135,12 @@ def add_phpfpm_conf(domain,homeRoot,fpmPort):
 		configFile.close();
 	basics.command("service php5-fpm force-reload")
 
-def lets_encrypt(domain,homeRoot):
+def lets_encrypt():
+	global domain, homeRoot
 	basics.command("certbot --apache certonly --webroot -w " + homeRoot + " -d " + domain )
 
-def replace_attribute(attr,value,file):
-	# sucht nach Zeile mit prefix (attr) und setzt das Value neu.
-	# attr:value
-	# attr=value
-	# attr value
-	file = open("templates/php-fpm_conf.txt")
-	fileStr = file.read();
-	template.replace("[root_path]",homeRoot);
-	return true
-
-def enable_apache_site(domain):
+def enable_apache_site():
+	global domain
 	basics.command("/usr/sbin/a2ensite " + domain)
 	basics.command("service apache2 reload")
 
@@ -111,27 +148,25 @@ def restart_services():
 	basics.command("service apache2 reload")
 	basics.command("service php5-fpm force-reload")
 
-# argumente auswerten
+# ======================================================================================================================
+# ======================================================================================================================
+#	shots are fired!!!!
+# ======================================================================================================================
 
-parser = argparse.ArgumentParser(description='Anlegen einer neuen Domain')
-#parser.add_argument("-h", help="print this help")
-parser.add_argument("-n", "--home", help="home root path. default: \"/home\"", default="/home")
-parser.add_argument("--nossl", help="no ssl certificate for me", action='store_true')
-parser.add_argument("-d", "--domain", help="domain name", required=True)
-#parser.add_argument("-o", "--overwrite", help="overwrite existent files", action="store_true", default=False)
-args = vars(parser.parse_args())
+if yesNo == "yes":
+	fpmPort = get_fpm_port()
+	create_www_user()
+	create_www_home()
+	if not nossl:
+		lets_encrypt()
+	add_apache_vhost()
+	add_phpfpm_conf()
+	enable_apache_site()
+	print  colored("created the vhost " + domain, 'red')
+else:
+	print  colored("not created the vhost " + domain, 'red')
 
-domain = args["domain"]
-homeRoot = args["home"]
-nossl = args["ssl"]
-
-#verwrite = args["overwrite"]
-
-create_www_user(domain, homeRoot)
-create_www_home(domain, homeRoot)
-fpmPort = get_highest_fpm_port()
-if not nossl:
-	lets_encrypt(domain,homeRoot)
-add_apache_vhost(domain,homeRoot,fpmPort,nossl)
-add_phpfpm_conf(domain,homeRoot,fpmPort)
-enable_apache_site(domain)
+# ======================================================================================================================
+# ======================================================================================================================
+#	the End
+# ======================================================================================================================
